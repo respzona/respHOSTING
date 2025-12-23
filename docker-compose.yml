@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # FastAPI бэкенд
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DATABASE_URL=sqlite:///./bothost.db
+    command: python main.py
+    restart: always
+
+  # Nginx (обратный прокси)
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    restart: always
+
+  # PostgreSQL (если будешь использовать вместо SQLite)
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bothost
+      - POSTGRES_USER=bothost
+      - POSTGRES_PASSWORD=secretpassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
